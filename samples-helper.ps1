@@ -78,7 +78,7 @@ function Find-Fwlinks{
         $paths = @()
         $result = @()
 
-        Get-ChildItem $rootPath *.* -Recurse -File | select-string $pattern  | % {
+        Get-ChildItem $rootPath *.* -Recurse -File | Select-string 'href="http://go.microsoft.com' -SimpleMatch  | % {
             try{
                 $mresult = [regex]::Match($_,$pattern).Captures.Groups[0].Value
                 if(-not ([string]::IsNullOrEmpty($mresult))){
@@ -152,7 +152,7 @@ function Remove-UniqueText{
         [string]$exclude = '.git'
     )
     process{
-        $fwlinkresult = Find-Fwlinks
+        $fwlinkresult = Find-Fwlinks -rootPath $rootPath
 
         if( ($fwlinkresult -eq $null ) -or
             ($fwlinkresult.FWLinks -eq $null) -or
@@ -212,8 +212,14 @@ function EnsurePecanWaffleLoaded{
 # this will clean it of guids/fwlinks/etc
 function Prepare-SourceDirectory{
     [cmdletbinding()]
-    param()
+    param(
+        [string]$rootPath = (join-path $pwd 'samples')
+    )
     process{
+        EnsureFileReplacerInstlled
+        Normalize-Guids -rootPath $rootPath
+        Normalize-DevServerPort -rootPath $rootPath
+        Remove-UniqueText -rootPath $rootPath
     }
 }
 
@@ -266,12 +272,21 @@ function Get-Fullpath{
     }
 }
 
+
+$sourcePathOnAllFiles = ($scriptdir | Get-Fullpath)
+$sourPathonMaster = (join-path $scriptdir '..\aspnettemplates' | Get-Fullpath)
+
+if($sourcePathOnAllFiles -eq $sourPathonMaster){
+    throw ('both source path cannot be the same [{0}] [{1}]' -f $sourcePathOnAllFiles,$sourPathonMaster)
+}
+
 $config = New-Object -TypeName psobject -Property @{
-    SourcePath = ($scriptdir | Get-Fullpath)
-    SamplesPath = (Join-Path $scriptdir 'samples' | Get-Fullpath)
-    TargetSourceRoot =  (Join-Path $scriptdir 'samples' | Get-Fullpath)
+    SourcePath = $sourcePathOnAllFiles
+    SamplesPath = (Join-Path $sourcePathOnAllFiles 'samples' | Get-Fullpath)
+    TargetSourceRoot = $sourPathonMaster
     # TargetSourceRoot = ('C:\temp\templates-temp')
-    TargetPath = ('C:\temp\templates-temp\samples')
+    TargetSamplesPath = (Join-Path $sourPathonMaster 'samples' | Get-Fullpath)
+    #TargetSamplesPath = ('C:\temp\templates-temp\samples')
     Basebranch = 'master'
 }
 
@@ -280,7 +295,7 @@ $config = New-Object -TypeName psobject -Property @{
 InternalImport-NuGetPowershell
 EnsurePecanWaffleLoaded
 
-
+[bool]$pushToGithub = $true
 try{
     Push-Location
     Set-Location ($config.TargetSourceRoot) -ErrorAction Stop
@@ -292,7 +307,7 @@ try{
         throw 'error'
     }
 
-    Prepare-SourceDirectory
+    Prepare-SourceDirectory -rootPath ($config.SourcePath)
     # switch to the correct branch
     git checkout ($config.Basebranch) | Write-Output
     # clean the folder
@@ -304,7 +319,7 @@ try{
     git branch -D mvcnoauth
     git checkout -b mvcnoauth
     # copy base NoAuth files
-    CopyFiles -sourcePath "$($config.SamplesPath)\MvcNoAuth" -destPath ($config.TargetPath)
+    CopyFiles -sourcePath "$($config.SamplesPath)\MvcNoAuth" -destPath ($config.TargetSamplesPath)
     git add . --all
     git commit -m 'noauth initial'
     
@@ -313,23 +328,37 @@ try{
     if([string]::IsNullOrWhiteSpace($noauthcommitid)){ 
         throw ('Unable to determine value for noauthcommitid') 
     }
+    
+    if($pushToGithub){
+        git push origin --delete mvcnoauth
+        git push -u origin mvcnoauth
+    }
         
     # noauth-indauth
     git checkout mvcnoauth
     git branch -D mvcnoauth-indauth
     git checkout -b mvcnoauth-indauth
-    CopyFiles -sourcePath "$($config.SamplesPath)\MvcIndAuth" -destPath ($config.TargetPath)
+    CopyFiles -sourcePath "$($config.SamplesPath)\MvcIndAuth" -destPath ($config.TargetSamplesPath)
     git add . --all
     git commit -m 'indauth'
-
+    
+    if($pushToGithub){
+        git push origin --delete mvcnoauth-indauth
+        git push -u origin mvcnoauth-indauth
+    }
     # noauth-winauth
     git checkout mvcnoauth
     git branch -D mvcnoauth-winauth
     git checkout -b mvcnoauth-winauth
 
-    CopyFiles -sourcePath "$($config.SamplesPath)\MvcWinAuth" -destPath ($config.TargetPath)
+    CopyFiles -sourcePath "$($config.SamplesPath)\MvcWinAuth" -destPath ($config.TargetSamplesPath)
     git add . --all
     git commit -m 'winauth'
+
+    if($pushToGithub){
+        git push origin --delete mvcnoauth-winauth
+        git push -u origin mvcnoauth-winauth
+    }
 }
 finally{
     Pop-Location
