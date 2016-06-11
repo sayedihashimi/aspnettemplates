@@ -92,16 +92,17 @@ function Remove-UniqueText{
     [cmdletbinding()]
     param(
         [string]$rootPath = ($pwd),
-        [string]$include = '*.config',
-        [string]$exclude = '.git;*.ps1'
+        [string]$include = '*.*',
+        [string]$exclude = '.git'
     )
     process{
-        $fwlink = Find-Fwlinks
+        $fwlinks = Find-Fwlinks
         $replacements = @{}
         foreach($fwlink in $fwlinks){
-            $replacements[$fwlink]=[string]::Empty
+            $replacements[$fwlink]='fwlink'
         }
 
+        # todo improve by finding fwlink extension:Get-ChildItem .\samples\ *.* -Recurse -File | select-string $pattern | %{ (Get-Item $_.path).Exists}|Select-Object -Unique
         Replace-TextInFolder -folder $rootPath -replacements $replacements -include $include -exclude $exclude
     }
 }
@@ -138,7 +139,7 @@ function InternalEnsure-DirectoryExists{
 }
 
 
-#EnsureFileReplacerInstlled
+EnsureFileReplacerInstlled
 #Normalize-Guids
 #Normalize-DevServerPort
-Find-Fwlinks
+Remove-UniqueText -rootPath "$pwd\samples"
