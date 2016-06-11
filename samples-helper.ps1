@@ -275,15 +275,23 @@ $config = New-Object -TypeName psobject -Property @{
 }
 
 
+"starting`r`n" | Write-Output
 InternalImport-NuGetPowershell
 EnsurePecanWaffleLoaded
+
 
 try{
     Push-Location
     Set-Location ($config.TargetSourceRoot) -ErrorAction Stop
 
-    Prepare-SourceDirectory
+    $statusResult = (git status -s)
+    if(-not [string]::IsNullOrWhiteSpace($statusResult)){
+        'It looks like there are pending changes in the directory [{0}]' -f $pwd | Write-Host -ForegroundColor Red
+        'Ensure git status -s returns empty before proceeding' | Write-Host -ForegroundColor Red
+        throw 'error'
+    }
 
+    Prepare-SourceDirectory
     # switch to the correct branch
     git checkout ($config.Basebranch) | Write-Output
     # clean the folder
