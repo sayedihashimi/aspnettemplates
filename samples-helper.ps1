@@ -269,7 +269,8 @@ function Get-Fullpath{
 $config = New-Object -TypeName psobject -Property @{
     SourcePath = ($scriptdir | Get-Fullpath)
     SamplesPath = (Join-Path $scriptdir 'samples' | Get-Fullpath)
-    TargetSourceRoot = ('C:\temp\templates-temp')
+    TargetSourceRoot =  (Join-Path $scriptdir 'samples' | Get-Fullpath)
+    # TargetSourceRoot = ('C:\temp\templates-temp')
     TargetPath = ('C:\temp\templates-temp\samples')
     Basebranch = 'master'
 }
