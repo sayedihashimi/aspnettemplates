@@ -6,13 +6,6 @@ function Get-ScriptDirectory
 }
 $scriptdir = (Get-ScriptDirectory)
 
-$config = New-Object -TypeName psobject -Property @{
-    RootPath = (Join-Path $scriptdir 'samples')
-    TargetPath = ('C:\temp\templates-temp\samples')
-    Basebranch = 'master'
-    InitialCommitId = 'cf2cb2d2cfe02a44c5af1303d939b87b444a2c3f'
-}
-
 <#
 .SYNOPSIS
     This will download and import nuget-powershell (https://github.com/ligershark/nuget-powershell),
@@ -235,32 +228,99 @@ function CopyFiles{
     }
 }
 
+<#
+.SYNOPSIS
+    Can be used to convert a relative path (i.e. .\project.proj) to a full path.
+#>
+function Get-Fullpath{
+    [cmdletbinding()]
+    param(
+        [Parameter(
+            Mandatory=$true,
+            ValueFromPipeline = $true)]
+        [string[]]$path,
+
+        $workingDir = ($pwd)
+    )
+    process{
+        $fullPath = $path
+        $oldPwd = $pwd
+
+        Push-Location | out-null
+        Set-Location $workingDir | Out-Null
+        [Environment]::CurrentDirectory = $pwd
+        
+        try{
+            foreach($p in $path){
+                $r = [System.IO.Path]::GetFullPath($path)
+                if(-not ([string]::IsNullOrWhiteSpace($r))) {
+                    $r.TrimEnd('\')
+                }
+            }
+        }
+        finally{
+            Pop-Location | Out-Null
+            [Environment]::CurrentDirectory = $oldPwd
+        }
+        
+    }
+}
+
+$config = New-Object -TypeName psobject -Property @{
+    SourcePath = ($scriptdir | Get-Fullpath)
+    SamplesPath = (Join-Path $scriptdir 'samples' | Get-Fullpath)
+    TargetSourceRoot = ('C:\temp\templates-temp')
+    TargetPath = ('C:\temp\templates-temp\samples')
+    Basebranch = 'master'
+}
+
+
 InternalImport-NuGetPowershell
 EnsurePecanWaffleLoaded
 
 try{
     Push-Location
-    Set-Location ($config.TargetPath) -ErrorAction Stop
+    Set-Location ($config.TargetSourceRoot) -ErrorAction Stop
 
     Prepare-SourceDirectory
 
     # switch to the correct branch
     git checkout ($config.Basebranch) | Write-Output
-    # remove any untracked files
+    # clean the folder
+    git reset --hard
     git clean -f
     
-    # delete the noauth local branch
-    git branch -D noauth
-    git checkout -b noauth
-    CopyFiles -sourcePath 'C:\data\mycode\aspnettemplates-all\samples\MvcNoAuth' -destPath ($config.TargetPath)
+    ## NoAuth branch setup
+    # delete the noauth local branch and re-create
+    git branch -D mvcnoauth
+    git checkout -b mvcnoauth
+    # copy base NoAuth files
+    CopyFiles -sourcePath "$($config.SamplesPath)\MvcNoAuth" -destPath ($config.TargetPath)
     git add . --all
     git commit -m 'noauth initial'
     
     [string]$noauthcommitid = (git log -1 --format="%H")
     
-    CopyFiles -sourcePath 'C:\data\mycode\aspnettemplates-all\samples\MvcIndAuth' -destPath ($config.TargetPath)
+    if([string]::IsNullOrWhiteSpace($noauthcommitid)){ 
+        throw ('Unable to determine value for noauthcommitid') 
+    }
+        
+    # noauth-indauth
+    git checkout mvcnoauth
+    git branch -D mvcnoauth-indauth
+    git checkout -b mvcnoauth-indauth
+    CopyFiles -sourcePath "$($config.SamplesPath)\MvcIndAuth" -destPath ($config.TargetPath)
     git add . --all
     git commit -m 'indauth'
+
+    # noauth-winauth
+    git checkout mvcnoauth
+    git branch -D mvcnoauth-winauth
+    git checkout -b mvcnoauth-winauth
+
+    CopyFiles -sourcePath "$($config.SamplesPath)\MvcWinAuth" -destPath ($config.TargetPath)
+    git add . --all
+    git commit -m 'winauth'
 }
 finally{
     Pop-Location
