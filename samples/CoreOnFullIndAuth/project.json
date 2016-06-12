@@ -1,5 +1,5 @@
 ﻿{
-  "userSecretsId": "aspnet-MyWebApplication-e7fdb95b-1614-4ae4-9c05-2b2e88a2b62a",
+"usersecretid":"",
 
   "dependencies": {
     "Microsoft.AspNetCore.Authentication.Cookies": "1.0.0-rc2-final",
