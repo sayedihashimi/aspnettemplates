@@ -78,7 +78,7 @@ function Find-Fwlinks{
         $paths = @()
         $result = @()
 
-        Get-ChildItem $rootPath *.* -Recurse -File | Select-string 'href="http://go.microsoft.com' -SimpleMatch  | % {
+        Get-ChildItem $rootPath *.* -Recurse -File | Select-string 'http://go.microsoft.com' -SimpleMatch  | % {
             try{
                 $mresult = [regex]::Match($_,$pattern).Captures.Groups[0].Value
                 if(-not ([string]::IsNullOrEmpty($mresult))){
@@ -295,7 +295,78 @@ $config = New-Object -TypeName psobject -Property @{
 InternalImport-NuGetPowershell
 EnsurePecanWaffleLoaded
 
+function CreateAllDiffs{
+    [cmdletbinding()]
+    param(
+    )
+    process{
+        try{
+            Push-Location
+            Set-Location ($config.TargetSourceRoot) -ErrorAction Stop
+
+            # switch to master branch and clean up the directory before starting
+            $statusResult = (git status -s)
+            if(-not [string]::IsNullOrWhiteSpace($statusResult)){
+                'It looks like there are pending changes in the directory [{0}]' -f $pwd | Write-Host -ForegroundColor Red
+                'Ensure git status -s returns empty before proceeding' | Write-Host -ForegroundColor Red
+                throw 'error'
+            }
+
+            Prepare-SourceDirectory -rootPath ($config.SourcePath)
+        
+            # get all directories and process each
+            [string[]]$dirs = ((Get-ChildItem ($config.SamplesPath) -Directory).FullName)
+            for($i = 0; $i -le $dirs.Length;$i++){
+                # prepare the base branch
+                [System.IO.DirectoryInfo]$dir = (Get-Item ($dirs[$i]))
+                $dirName = $dir.Name
+
+                git checkout ($config.Basebranch)
+                git reset --hard
+                git clean -f
+                git branch -D ($dir.Name)
+                git checkout -b ($dir.Name)
+
+                CopyFiles -sourcePath ($dir.FullName) -destPath ($config.TargetSamplesPath)
+                git add . --all
+                git commit -m ("commit [0]:[1]:[2]" -f $dir.Name, $i, $j)
+                if($pushToGithub){
+                    git push origin --delete ($dir.Name)
+                    git push -u origin ($dir.Name)
+                }
+
+                for($j = 0; $j -le $dirs.Length;$j++){
+                    if( $i -ne $j){
+                        [System.IO.DirectoryInfo]$dir2 = (Get-Item $dirs[$j])
+                        $branchName = "$($dir.Name)-$($dir2.Name)"
+                        git reset --hard
+                        git clean -f
+                        git branch -D $branchName
+                        git checkout -b $branchName
+                        CopyFiles -sourcePath ($dir2.FullName) -destPath ($config.TargetSamplesPath)
+                        git add . --all
+                        git commit -m ("commit [0]:[1]:[2]" -f $branchName, $i, $j)
+
+                        if($pushToGithub){
+                            git push origin --delete $branchName
+                            git push -u origin $branchName
+                        }
+                    }
+                }
+            }
+        }
+        finally{
+            Pop-Location
+        }
+    }
+}
+
+
+
 [bool]$pushToGithub = $true
+CreateAllDiffs
+
+<#
 try{
     Push-Location
     Set-Location ($config.TargetSourceRoot) -ErrorAction Stop
@@ -308,6 +379,7 @@ try{
     }
 
     Prepare-SourceDirectory -rootPath ($config.SourcePath)
+
     # switch to the correct branch
     git checkout ($config.Basebranch) | Write-Output
     # clean the folder
@@ -363,6 +435,7 @@ try{
 finally{
     Pop-Location
 }
+#>
 
 #### mvcnoauth branch
 # switch to master branch
