@@ -403,9 +403,6 @@ function CreateAllDiffs{
     }
 }
 
-Prepare-SourceDirectory
-return
-
 [bool]$pushToGithub = $true
 CreateAllDiffs
 
