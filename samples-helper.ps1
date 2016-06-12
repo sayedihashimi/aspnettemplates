@@ -284,6 +284,7 @@ function Prepare-SourceDirectory{
         Normalize-DevServerPort -rootPath $rootPath
         Remove-UniqueText -rootPath $rootPath
         Normalize-UserSecrets -rootPath $rootPath
+        Normalize-ConString -rootPath $rootPath
     }
 }
 
@@ -389,9 +390,6 @@ $config = New-Object -TypeName psobject -Property @{
 InternalImport-NuGetPowershell
 EnsureFileReplacerInstlled
 EnsurePecanWaffleLoaded
-
-Normalize-ConString
-return
 
 $global:compareUrls = @()
 function CreateAllDiffs{
