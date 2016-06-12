@@ -176,13 +176,13 @@ function Remove-UniqueText{
     }
 }
 
-function Remove-UserSecrets{
+function Normalize-UserSecrets{
     [cmdletbinding()]
     param(
         [string]$rootPath = ($pwd)
     )
     process{
-        $matches = Get-ChildItem $rootPath *.json -Recurse -File |select-string '.*\"userSecretsId\".*'|%{ [regex]::Match($_,'[^:]*\"userSecretsId\".*') }
+        $matches = Get-ChildItem $rootPath project.json -Recurse -File |select-string '.*\"userSecretsId\".*'|%{ [regex]::Match($_,'[^:]*\"userSecretsId\".*') }
         if($matches -ne $null){
                 
             $secretList = @()
@@ -200,11 +200,43 @@ function Remove-UserSecrets{
             $secretList = ($secretList | Select-Object -Unique)
             $replacements = @{}
             foreach($sec in $secretList){
-                $replacements[$sec]='"usersecretid":"",'
+                $replacements[$sec]='"usersecretid":"<removed-to-simplify-diff>",'
             }
 
             Replace-TextInFolder -folder $rootPath -replacements $replacements -include project.json
         }
+    }
+}
+
+function Normalize-ConString{
+    [cmdletbinding()]
+    param(
+        [string]$rootPath = ($pwd)
+    )
+    process{
+        $matches = Get-ChildItem $rootPath appSettings.json -Recurse -File |select-string '.*\"DefaultConnection.*'|%{ [regex]::Match($_,'[^:]*\"DefaultConnection\".*') }
+        if($matches -ne $null){
+                
+            $secretList = @()
+            foreach($m in $matches){
+                $value = ''
+                try{
+                    $value = ($m.Groups[0].Value)    
+                }
+                catch{ }
+                if(-not ([string]::IsNullOrWhiteSpace($value))){
+                    $secretList += ($m.Groups[0].Value)
+                }
+            }
+
+            $secretList = ($secretList | Select-Object -Unique)
+            $replacements = @{}
+            foreach($sec in $secretList){
+                $replacements[$sec]='"DefaultConnection":"<removed-to-simplify-diff>",'
+            }
+
+            Replace-TextInFolder -folder $rootPath -replacements $replacements -include appSettings.json
+        }        
     }
 }
 
@@ -251,7 +283,7 @@ function Prepare-SourceDirectory{
         Normalize-Guids -rootPath $rootPath
         Normalize-DevServerPort -rootPath $rootPath
         Remove-UniqueText -rootPath $rootPath
-        Remove-UserSecrets -rootPath $rootPath
+        Normalize-UserSecrets -rootPath $rootPath
     }
 }
 
@@ -304,6 +336,34 @@ function Get-Fullpath{
     }
 }
 
+function GetMarkdownReport{
+    [cmdletbinding()]
+    param()
+    process{
+        [System.IO.DirectoryInfo[]]$dirs = (Get-ChildItem -Path ($config.SamplesPath) -Directory)
+        $baseUrl = $config.BaseCompareUrl
+        for($i = 0;$i -lt ($dirs.Length);$i++){
+            $dir1 = $dirs[$i]
+            "`r`n`r`n## {0}`r`n" -f ($dir1.Name) | Write-Output
+
+            $allLinks = @()
+            for($j = 0;$j -lt ($dirs.Length);$j++){
+                if($i -ne $j){
+                    $dir2 = $dirs[$j]
+                    # https://github.com/sayedihashimi/aspnettemplates/compare/CoreIndAuth...CoreIndAuth-CoreNoAuth
+                    $url1to2 = ('{0}{1}...{1}-{2}' -f $baseUrl,($dir1.Name),($dir2.Name))
+                    $url2to1 = ('{0}{2}...{2}-{1}' -f $baseUrl,($dir1.Name),($dir2.Name))
+
+                    $allLinks += '- [{1} → {2}]({0})' -f $url1to2,($dir1.Name),($dir2.Name)
+                    $allLinks +='- [{2} → {1}]({0})' -f $url2to1,($dir1.Name),($dir2.Name)
+                }
+            }
+
+            $allLinks | Sort-Object | Write-Output
+        }
+    }
+}
+
 
 $sourcePathOnAllFiles = ($scriptdir | Get-Fullpath)
 $sourPathonMaster = (join-path $scriptdir '..\aspnettemplates' | Get-Fullpath)
@@ -324,9 +384,14 @@ $config = New-Object -TypeName psobject -Property @{
 }
 
 
+
 "starting`r`n" | Write-Output
 InternalImport-NuGetPowershell
+EnsureFileReplacerInstlled
 EnsurePecanWaffleLoaded
+
+Normalize-ConString
+return
 
 $global:compareUrls = @()
 function CreateAllDiffs{
