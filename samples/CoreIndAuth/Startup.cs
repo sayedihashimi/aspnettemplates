@@ -26,7 +26,7 @@ namespace MyWebApplication
 
             if (env.IsDevelopment())
             {
-                // For more details on using the user secret store see http://go.microsoft.com/fwlink/?LinkID=532709
+                // For more details on using the user secret store see fwlink
                 builder.AddUserSecrets();
             }
 
@@ -75,7 +75,7 @@ namespace MyWebApplication
 
             app.UseIdentity();
 
-            // Add external authentication middleware below. To configure them please see http://go.microsoft.com/fwlink/?LinkID=532715
+            // Add external authentication middleware below. To configure them please see fwlink
 
             app.UseMvc(routes =>
             {
