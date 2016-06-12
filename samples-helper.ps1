@@ -288,6 +288,7 @@ $config = New-Object -TypeName psobject -Property @{
     TargetSamplesPath = (Join-Path $sourPathonMaster 'samples' | Get-Fullpath)
     #TargetSamplesPath = ('C:\temp\templates-temp\samples')
     Basebranch = 'master'
+    BaseCompareUrl = 'https://github.com/sayedihashimi/aspnettemplates/compare/'
 }
 
 
@@ -295,6 +296,7 @@ $config = New-Object -TypeName psobject -Property @{
 InternalImport-NuGetPowershell
 EnsurePecanWaffleLoaded
 
+$global:compareUrls = @()
 function CreateAllDiffs{
     [cmdletbinding()]
     param(
@@ -316,7 +318,7 @@ function CreateAllDiffs{
         
             # get all directories and process each
             [string[]]$dirs = ((Get-ChildItem ($config.SamplesPath) -Directory).FullName)
-            for($i = 0; $i -le $dirs.Length;$i++){
+            for($i = 0; $i -lt $dirs.Length;$i++){
                 # prepare the base branch
                 [System.IO.DirectoryInfo]$dir = (Get-Item ($dirs[$i]))
                 $dirName = $dir.Name
@@ -329,27 +331,32 @@ function CreateAllDiffs{
 
                 CopyFiles -sourcePath ($dir.FullName) -destPath ($config.TargetSamplesPath)
                 git add . --all
-                git commit -m ("commit [0]:[1]:[2]" -f $dir.Name, $i, $j)
+                git commit -m ("commit [{0}]:[{1}]" -f $dir.Name, $i)
                 if($pushToGithub){
                     git push origin --delete ($dir.Name)
                     git push -u origin ($dir.Name)
                 }
 
-                for($j = 0; $j -le $dirs.Length;$j++){
+                for($j = 0; $j -lt $dirs.Length;$j++){
                     if( $i -ne $j){
                         [System.IO.DirectoryInfo]$dir2 = (Get-Item $dirs[$j])
                         $branchName = "$($dir.Name)-$($dir2.Name)"
                         git reset --hard
                         git clean -f
+                        git checkout ($dir.Name)
                         git branch -D $branchName
                         git checkout -b $branchName
                         CopyFiles -sourcePath ($dir2.FullName) -destPath ($config.TargetSamplesPath)
                         git add . --all
-                        git commit -m ("commit [0]:[1]:[2]" -f $branchName, $i, $j)
+                        git commit -m ("commit [{0}]:[{1}]:[{2}]" -f $branchName, $i, $j)
 
                         if($pushToGithub){
                             git push origin --delete $branchName
                             git push -u origin $branchName
+                            $compareUrl = '{0}{1}...{2}' -f ($config.BaseCompareUrl),($dir.Name),$branchName
+                            $global:compareUrls += $compareUrl
+                            
+                            $compareUrl | Write-Host -ForegroundColor Cyan
                         }
                     }
                 }
@@ -357,6 +364,9 @@ function CreateAllDiffs{
         }
         finally{
             Pop-Location
+
+            $global:compareUrls | clip
+            'Compare urls are on the clipboard' | Write-Host -ForegroundColor Cyan
         }
     }
 }
