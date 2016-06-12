@@ -172,8 +172,39 @@ function Remove-UniqueText{
             $replacements[$fwlink]='fwlink'
         }
 
-        # todo improve by finding fwlink extension:Get-ChildItem .\samples\ *.* -Recurse -File | select-string $pattern | %{ (Get-Item $_.path).Extension}|Select-Object -Unique
         Replace-TextInFolder -folder $rootPath -replacements $replacements -include $include -exclude $exclude
+    }
+}
+
+function Remove-UserSecrets{
+    [cmdletbinding()]
+    param(
+        [string]$rootPath = ($pwd)
+    )
+    process{
+        $matches = Get-ChildItem $rootPath *.json -Recurse -File |select-string '.*\"userSecretsId\".*'|%{ [regex]::Match($_,'[^:]*\"userSecretsId\".*') }
+        if($matches -ne $null){
+                
+            $secretList = @()
+            foreach($m in $matches){
+                $value = ''
+                try{
+                    $value = ($m.Groups[0].Value)    
+                }
+                catch{ }
+                if(-not ([string]::IsNullOrWhiteSpace($value))){
+                    $secretList += ($m.Groups[0].Value)
+                }
+            }
+
+            $secretList = ($secretList | Select-Object -Unique)
+            $replacements = @{}
+            foreach($sec in $secretList){
+                $replacements[$sec]='"usersecretid":"",'
+            }
+
+            Replace-TextInFolder -folder $rootPath -replacements $replacements -include project.json
+        }
     }
 }
 
@@ -220,6 +251,7 @@ function Prepare-SourceDirectory{
         Normalize-Guids -rootPath $rootPath
         Normalize-DevServerPort -rootPath $rootPath
         Remove-UniqueText -rootPath $rootPath
+        Remove-UserSecrets -rootPath $rootPath
     }
 }
 
@@ -371,7 +403,8 @@ function CreateAllDiffs{
     }
 }
 
-
+Prepare-SourceDirectory
+return
 
 [bool]$pushToGithub = $true
 CreateAllDiffs
