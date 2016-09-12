@@ -319,12 +319,12 @@ function Get-Fullpath{
     process{
         $fullPath = $path
         $oldPwd = $pwd
-
-        Push-Location | out-null
-        Set-Location $workingDir | Out-Null
-        [Environment]::CurrentDirectory = $pwd
         
         try{
+            Push-Location | out-null
+            Set-Location $workingDir | Out-Null
+            [Environment]::CurrentDirectory = $pwd
+
             foreach($p in $path){
                 $r = [System.IO.Path]::GetFullPath($path)
                 if(-not ([string]::IsNullOrWhiteSpace($r))) {
@@ -344,7 +344,7 @@ function GetMarkdownReport{
     [cmdletbinding()]
     param()
     process{
-        [System.IO.DirectoryInfo[]]$dirs = (Get-ChildItem -Path ($config.SamplesPath) -Directory)
+        [System.IO.DirectoryInfo[]]$dirs = (Get-ChildItem -Path $allFilesRoot -Directory)
         $baseUrl = $config.BaseCompareUrl
         for($i = 0;$i -lt ($dirs.Length);$i++){
             $dir1 = $dirs[$i]
@@ -368,19 +368,21 @@ function GetMarkdownReport{
     }
 }
 
+$allFilesRoot = (join-path $scriptdir '..\aspnettemplates-allfiles' | Get-Fullpath)
+$masterRoot = (join-path $scriptdir '..\aspnettemplates-master' | Get-Fullpath)
+$destRoot = (join-path $scriptdir '..\aspnettemplates-dest' | Get-Fullpath)
+#$sourcePathOnAllFiles = (join-path $scriptdir '..\aspnettemplates-allfiles' | Get-Fullpath)
+#$sourPathonMaster = (join-path $scriptdir '..\aspnettemplates-master' | Get-Fullpath)
 
-$sourcePathOnAllFiles = (join-path $scriptdir '..\aspnettemplates-allfiles' | Get-Fullpath)
-$sourPathonMaster = (join-path $scriptdir '..\aspnettemplates-master' | Get-Fullpath)
-
-if(-not (Test-Path $sourcePathOnAllFiles)){
-    throw ('Samples path not found at [{0}]' -f $sourcePathOnAllFiles)
+if(-not (Test-Path $allFilesRoot)){
+    throw ('Samples path not found at [{0}]' -f $allFilesRoot)
 }
-if(-not (Test-Path $sourPathonMaster)){
-    throw ('Samples path not found at [{0}]' -f $sourPathonMaster)
+if(-not (Test-Path $masterRoot)){
+    throw ('Samples path not found at [{0}]' -f $masterRoot)
 }
 
-if($sourcePathOnAllFiles -eq $sourPathonMaster){
-    throw ('both source path cannot be the same [{0}] [{1}]' -f $sourcePathOnAllFiles,$sourPathonMaster)
+if($allFilesRoot -eq $masterRoot){
+    throw ('both source path cannot be the same [{0}] [{1}]' -f $allFilesRoot,$masterRoot)
 }
 
 $config = New-Object -TypeName psobject -Property @{
@@ -409,7 +411,7 @@ function CreateAllDiffs{
     process{
         try{
             Push-Location
-            Set-Location ($config.TargetSourceRoot) -ErrorAction Stop
+            Set-Location "$allFilesRoot\samples" -ErrorAction Stop
 
             # switch to master branch and clean up the directory before starting
             $statusResult = (git status -s)
@@ -419,12 +421,17 @@ function CreateAllDiffs{
                 throw 'error'
             }
 
-            git checkout allfiles 2>&1
-            Prepare-SourceDirectory -rootPath ($config.SourcePath)
+            # git checkout allfiles 2>&1
+            Prepare-SourceDirectory -rootPath ("$allFilesRoot\samples")
         
+            git checkout allfiles 2>&1
+
             # get all directories and process each
-            [string[]]$dirs = ((Get-ChildItem ($config.SamplesPath) -Directory).FullName)
+            [string[]]$dirs = ((Get-ChildItem ("$allFilesRoot\samples") -Directory).FullName)
             for($i = 0; $i -lt $dirs.Length;$i++){
+                #Set-Location ("$allFilesRoot\samples") -ErrorAction Stop
+                Set-Location ("$destRoot\samples") -ErrorAction Stop
+                #git checkout allfiles 2>&1
                 # prepare the base branch
                 [System.IO.DirectoryInfo]$dir = (Get-Item ($dirs[$i]))
                 $dirName = $dir.Name
@@ -435,7 +442,7 @@ function CreateAllDiffs{
                 git branch -D ($dir.Name) 2>&1
                 git checkout -b ($dir.Name) 2>&1
 
-                CopyFiles -sourcePath ($dir.FullName) -destPath ($config.TargetSamplesPath)
+                CopyFiles -sourcePath ($dir.FullName) -destPath ("$destRoot\samples")
                 git add . --all 2>&1
                 git commit -m ("commit [{0}]:[{1}]" -f $dir.Name, $i) 2>&1
                 if($pushToGithub){
@@ -452,7 +459,7 @@ function CreateAllDiffs{
                         git checkout ($dir.Name) 2>&1
                         git branch -D $branchName 2>&1
                         git checkout -b $branchName 2>&1
-                        CopyFiles -sourcePath ($dir2.FullName) -destPath ($config.TargetSamplesPath)
+                        CopyFiles -sourcePath ($dir2.FullName) -destPath ("$destRoot\samples")
                         git add . --all 2>&1
                         git commit -m ("commit [{0}]:[{1}]:[{2}]" -f $branchName, $i, $j) 2>&1
 
