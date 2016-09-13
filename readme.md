@@ -235,3 +235,33 @@ You can use this repository to compare different templates below is a table of t
 - [MvcWinAuth → MvcIndAuth](https://github.com/sayedihashimi/aspnettemplates/compare/MvcWinAuth...MvcWinAuth-MvcIndAuth)
 - [MvcWinAuth → MvcIndAuthWithAI](https://github.com/sayedihashimi/aspnettemplates/compare/MvcWinAuth...MvcWinAuth-MvcIndAuthWithAI)
 - [MvcWinAuth → MvcNoAuth](https://github.com/sayedihashimi/aspnettemplates/compare/MvcWinAuth...MvcWinAuth-MvcNoAuth)
+
+
+## API No Auth
+
+[ApiNoAuth → ApiIndAuth](https://github.com/sayedihashimi/aspnettemplates/compare/api-noauth...api-noauth-api-indauth)
+[ApiNoAuth → ApiWinAuth](https://github.com/sayedihashimi/aspnettemplates/compare/api-noauth...api-noauth-api-winauth)
+[ApiNoAuth → CoreApiNoAuth](https://github.com/sayedihashimi/aspnettemplates/compare/api-noauth...api-noauth-coreapi-noauth)
+[ApiNoAuth → CoreApiWinAuth](https://github.com/sayedihashimi/aspnettemplates/compare/api-noauth...api-noauth-coreapi-winauth)
+
+## API Ind Auth
+
+[ApiIndAuth → ApiNoAuth](https://github.com/sayedihashimi/aspnettemplates/compare/api-indauth...api-indauth-api-noauth)
+[ApiIndAuth → ApiWinAuth](https://github.com/sayedihashimi/aspnettemplates/compare/api-indauth...api-indauth-api-winauth)
+[ApiIndAuth → CoreApiNoAuth](https://github.com/sayedihashimi/aspnettemplates/compare/api-indauth...api-indauth-coreapi-noauth)
+[ApiIndAuth → CoreApiWinAuth](https://github.com/sayedihashimi/aspnettemplates/compare/api-indauth...api-indauth-coreapi-winauth)
+
+## CoreApiNoAuth
+
+[CoreApiNoAuth → CoreApiWinAuth](https://github.com/sayedihashimi/aspnettemplates/compare/coreapi-noauth...coreapi-noauth-coreapi-winauth)
+[CoreApiNoAuth → ApiIndAuth](https://github.com/sayedihashimi/aspnettemplates/compare/coreapi-noauth...coreapi-noauth-api-indauth)
+[CoreApiNoAuth → ApiNoAuth](https://github.com/sayedihashimi/aspnettemplates/compare/coreapi-noauth...coreapi-noauth-api-noauth)
+[CoreApiNoAuth → ApiWinAuth](https://github.com/sayedihashimi/aspnettemplates/compare/coreapi-noauth...coreapi-noauth-api-winauth)
+
+## CoreApiWinAuth
+
+[CoreApiWinAuth → CoreApiNoAuth](https://github.com/sayedihashimi/aspnettemplates/compare/coreapi-winauth...coreapi-winauth-coreapi-noauth)
+[CoreApiWinAuth → ApiIndAuth](https://github.com/sayedihashimi/aspnettemplates/compare/coreapi-winauth...coreapi-winauth-api-indauth)
+[CoreApiWinAuth → ApiNoAuth](https://github.com/sayedihashimi/aspnettemplates/compare/coreapi-winauth...coreapi-winauth-api-noauth)
+[CoreApiWinAuth → ApiWinAuth](https://github.com/sayedihashimi/aspnettemplates/compare/coreapi-winauth...coreapi-winauth-api-winauth)
+
