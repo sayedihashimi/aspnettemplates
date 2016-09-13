@@ -426,6 +426,62 @@ function CreateAllDiffs{
         
             git checkout allfiles 2>&1
 
+            [string[]]$sDirs = ((Get-ChildItem ("$allFilesRoot\samples") -Directory).FullName)
+            foreach($d in $sDirs){
+                $dInfo = (Get-Item $d)
+                $currentName = $dInfo.Name
+
+                # get all directories and process each
+                [string[]]$dirs = ((Get-ChildItem ($dInfo.FullName) -Directory).FullName)
+                for($i = 0; $i -lt $dirs.Length;$i++){
+                    #Set-Location ("$allFilesRoot\samples") -ErrorAction Stop
+                    Set-Location ("$destRoot\samples") -ErrorAction Stop
+                    #git checkout allfiles 2>&1
+                    # prepare the base branch
+                    [System.IO.DirectoryInfo]$dir = (Get-Item ($dirs[$i]))
+                    $dirName = $currentName + '-' + $dir.Name
+
+                    git checkout ($config.Basebranch) 2>&1
+                    git reset --hard 2>&1
+                    git clean -f 2>&1
+                    git branch -D ($dir.Name) 2>&1
+                    git checkout -b ($dir.Name) 2>&1
+
+                    CopyFiles -sourcePath ($dir.FullName) -destPath ("$destRoot\samples")
+                    git add . --all 2>&1
+                    git commit -m ("commit [{0}]:[{1}]" -f $dir.Name, $i) 2>&1
+                    if($pushToGithub){
+                        git push origin --delete ($dir.Name) 2>&1
+                        git push -u origin ($dir.Name) 2>&1
+                    }
+
+                    for($j = 0; $j -lt $dirs.Length;$j++){
+                        if( $i -ne $j){
+                            [System.IO.DirectoryInfo]$dir2 = (Get-Item $dirs[$j])
+                            $branchName = "$($currentName)-$($dir.Name)-$($dir2.Name)"
+                            git reset --hard 2>&1
+                            git clean -f 2>&1
+                            git checkout ($dir.Name) 2>&1
+                            git branch -D $branchName 2>&1
+                            git checkout -b $branchName 2>&1
+                            CopyFiles -sourcePath ($dir2.FullName) -destPath ("$destRoot\samples")
+                            git add . --all 2>&1
+                            git commit -m ("commit [{0}]:[{1}]:[{2}]" -f $branchName, $i, $j) 2>&1
+
+                            if($pushToGithub){
+                                git push origin --delete $branchName 2>&1
+                                git push -u origin $branchName 2>&1
+                                $compareUrl = '{0}{1}...{2}' -f ($config.BaseCompareUrl),($dir.Name),$branchName
+                                $global:compareUrls += $compareUrl
+                            
+                                $compareUrl | Write-Host -ForegroundColor Cyan
+                            }
+                        }
+                    }
+                }
+            }
+
+            <#
             # get all directories and process each
             [string[]]$dirs = ((Get-ChildItem ("$allFilesRoot\samples") -Directory).FullName)
             for($i = 0; $i -lt $dirs.Length;$i++){
@@ -474,6 +530,7 @@ function CreateAllDiffs{
                     }
                 }
             }
+            #>
         }
         finally{
             Pop-Location
