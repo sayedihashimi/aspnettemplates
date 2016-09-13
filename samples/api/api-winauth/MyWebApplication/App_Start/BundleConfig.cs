@@ -3,7 +3,7 @@ using System.Web.Optimization;
 
 namespace MyWebApplication {
     public class BundleConfig {
-        // For more information on bundling, visit http://go.microsoft.com/fwlink/?LinkId=301862
+        // For more information on bundling, visit fwlink
         public static void RegisterBundles(BundleCollection bundles) {
             bundles.Add(new ScriptBundle("~/bundles/jquery").Include(
                         "~/Scripts/jquery-{version}.js"));
