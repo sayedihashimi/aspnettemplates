@@ -441,7 +441,6 @@ function CreateAllDiffs{
                     #git checkout allfiles 2>&1
                     # prepare the base branch
                     [System.IO.DirectoryInfo]$dir = (Get-Item ($dirs[$i]))
-                    $dirName = $currentName + '-' + $dir.Name
 
                     git checkout ($config.Basebranch) 2>&1
                     git reset --hard 2>&1
@@ -460,7 +459,8 @@ function CreateAllDiffs{
                     for($j = 0; $j -lt $dirs.Length;$j++){
                         if( $i -ne $j){
                             [System.IO.DirectoryInfo]$dir2 = (Get-Item $dirs[$j])
-                            $branchName = "$($currentName)-$($dir.Name)-$($dir2.Name)"
+                            # $branchName = "$($currentName)-$($dir.Name)-$($dir2.Name)"
+                            $branchName = "$($dir.Name)-$($dir2.Name)"
                             git reset --hard 2>&1
                             git clean -f 2>&1
                             git checkout ($dir.Name) 2>&1
