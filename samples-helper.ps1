@@ -282,12 +282,14 @@ function Prepare-SourceDirectory{
         [string]$rootPath = (join-path $pwd 'samples')
     )
     process{
+        'Preparing source directory, this may take some time if you added new sample files...' | Write-Output
         EnsureFileReplacerInstlled
         Normalize-Guids -rootPath $rootPath
         Normalize-DevServerPort -rootPath $rootPath
         Remove-UniqueText -rootPath $rootPath
         Normalize-UserSecrets -rootPath $rootPath
         Normalize-ConString -rootPath $rootPath
+        'Completed source file cleanup' | Write-Output
     }
 }
 
