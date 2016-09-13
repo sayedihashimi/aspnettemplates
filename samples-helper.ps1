@@ -300,7 +300,7 @@ function CopyFiles{
         [string]$destPath
     )
     process{
-        Copy-ItemRobocopy -sourcePath $sourcePath -destPath $destPath
+        Copy-ItemRobocopy -sourcePath $sourcePath -destPath $destPath -recurse
     }
 }
 
