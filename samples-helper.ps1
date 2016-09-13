@@ -386,12 +386,12 @@ if($allFilesRoot -eq $masterRoot){
 }
 
 $config = New-Object -TypeName psobject -Property @{
-    SourcePath = $sourcePathOnAllFiles
-    SamplesPath = (Join-Path $sourcePathOnAllFiles 'samples' | Get-Fullpath)
-    TargetSourceRoot = (Join-Path $sourcePathOnAllFiles 'samples' | Get-Fullpath)
-    # TargetSourceRoot = ('C:\temp\templates-temp')
-    TargetSamplesPath = (Join-Path $sourPathonMaster 'samples' | Get-Fullpath)
-    #TargetSamplesPath = ('C:\temp\templates-temp\samples')
+    #SourcePath = $sourcePathOnAllFiles
+    #SamplesPath = (Join-Path $sourcePathOnAllFiles 'samples' | Get-Fullpath)
+    #TargetSourceRoot = (Join-Path $sourcePathOnAllFiles 'samples' | Get-Fullpath)
+    ## TargetSourceRoot = ('C:\temp\templates-temp')
+    #TargetSamplesPath = (Join-Path $sourPathonMaster 'samples' | Get-Fullpath)
+    ##TargetSamplesPath = ('C:\temp\templates-temp\samples')
     Basebranch = 'master'
     BaseCompareUrl = 'https://github.com/sayedihashimi/aspnettemplates/compare/'
 }
