@@ -1,0 +1,25 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "FromsApp", "FromsApp.shproj", "{24554DF9-8982-4EE1-B9D1-40320D60F949}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FromsApp.iOS", "iOS\FromsApp.iOS.csproj", "{566A35EC-E24E-4405-B116-566EFC7A9C60}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|iPhoneSimulator = Debug|iPhoneSimulator
+		Release|iPhone = Release|iPhone
+		Release|iPhoneSimulator = Release|iPhoneSimulator
+		Debug|iPhone = Debug|iPhone
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{566A35EC-E24E-4405-B116-566EFC7A9C60}.Debug|iPhoneSimulator.ActiveCfg = Debug|iPhoneSimulator
+		{566A35EC-E24E-4405-B116-566EFC7A9C60}.Debug|iPhoneSimulator.Build.0 = Debug|iPhoneSimulator
+		{566A35EC-E24E-4405-B116-566EFC7A9C60}.Release|iPhone.ActiveCfg = Release|iPhone
+		{566A35EC-E24E-4405-B116-566EFC7A9C60}.Release|iPhone.Build.0 = Release|iPhone
+		{566A35EC-E24E-4405-B116-566EFC7A9C60}.Release|iPhoneSimulator.ActiveCfg = Release|iPhoneSimulator
+		{566A35EC-E24E-4405-B116-566EFC7A9C60}.Release|iPhoneSimulator.Build.0 = Release|iPhoneSimulator
+		{566A35EC-E24E-4405-B116-566EFC7A9C60}.Debug|iPhone.ActiveCfg = Debug|iPhone
+		{566A35EC-E24E-4405-B116-566EFC7A9C60}.Debug|iPhone.Build.0 = Debug|iPhone
+	EndGlobalSection
+EndGlobal

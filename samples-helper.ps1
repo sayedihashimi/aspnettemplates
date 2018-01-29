@@ -411,11 +411,11 @@ function CreateAllDiffs{
 
             # switch to master branch and clean up the directory before starting
             $statusResult = (git status -s)
-            if(-not [string]::IsNullOrWhiteSpace($statusResult)){
-                'It looks like there are pending changes in the directory [{0}]' -f $pwd | Write-Host -ForegroundColor Red
-                'Ensure git status -s returns empty before proceeding' | Write-Host -ForegroundColor Red
-                throw 'error'
-            }
+            #if(-not [string]::IsNullOrWhiteSpace($statusResult)){
+            #    'It looks like there are pending changes in the directory [{0}]' -f $pwd | Write-Host -ForegroundColor Red
+            #    'Ensure git status -s returns empty before proceeding' | Write-Host -ForegroundColor Red
+            #    throw 'error'
+            #}
 
             # git checkout allfiles 2>&1
             Prepare-SourceDirectory -rootPath ("$allFilesRoot\samples")
