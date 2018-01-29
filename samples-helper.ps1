@@ -9,6 +9,12 @@ function Get-ScriptDirectory
 }
 $scriptdir = (Get-ScriptDirectory)
 
+
+<#
+to clean up remote branches:
+   (git branch -r).replace("origin/","git push origin :").Trim()|%{if(-not($_.contains('master')) -and -not ($_.contains('allfiles')) ){$_}}|clip
+#>
+
 <#
 .SYNOPSIS
     This will download and import nuget-powershell (https://github.com/ligershark/nuget-powershell),
@@ -407,15 +413,20 @@ function CreateAllDiffs{
     process{
         try{
             Push-Location
+
+            Set-Location "$allFilesRoot" -ErrorAction Stop
+            # clean up any changes in allfiles folder
+            git reset --hard 2>&1
+            git clean -f 2>&1
             Set-Location "$allFilesRoot\samples" -ErrorAction Stop
 
             # switch to master branch and clean up the directory before starting
             $statusResult = (git status -s)
-            #if(-not [string]::IsNullOrWhiteSpace($statusResult)){
-            #    'It looks like there are pending changes in the directory [{0}]' -f $pwd | Write-Host -ForegroundColor Red
-            #    'Ensure git status -s returns empty before proceeding' | Write-Host -ForegroundColor Red
-            #    throw 'error'
-            #}
+            if(-not [string]::IsNullOrWhiteSpace($statusResult)){
+                'It looks like there are pending changes in the directory [{0}]' -f $pwd | Write-Host -ForegroundColor Red
+                'Ensure git status -s returns empty before proceeding' | Write-Host -ForegroundColor Red
+                throw 'error'
+            }
 
             # git checkout allfiles 2>&1
             Prepare-SourceDirectory -rootPath ("$allFilesRoot\samples")
