@@ -388,12 +388,6 @@ if($allFilesRoot -eq $masterRoot){
 }
 
 $config = New-Object -TypeName psobject -Property @{
-    #SourcePath = $sourcePathOnAllFiles
-    #SamplesPath = (Join-Path $sourcePathOnAllFiles 'samples' | Get-Fullpath)
-    #TargetSourceRoot = (Join-Path $sourcePathOnAllFiles 'samples' | Get-Fullpath)
-    ## TargetSourceRoot = ('C:\temp\templates-temp')
-    #TargetSamplesPath = (Join-Path $sourPathonMaster 'samples' | Get-Fullpath)
-    ##TargetSamplesPath = ('C:\temp\templates-temp\samples')
     Basebranch = 'master'
     BaseCompareUrl = 'https://github.com/sayedihashimi/aspnettemplates/compare/'
 }
@@ -426,7 +420,7 @@ function CreateAllDiffs{
             # git checkout allfiles 2>&1
             Prepare-SourceDirectory -rootPath ("$allFilesRoot\samples")
         
-            git checkout allfiles 2>&1
+            git checkout allfiles-xam 2>&1
 
             [string[]]$sDirs = ((Get-ChildItem ("$allFilesRoot\samples") -Directory).FullName)
             foreach($d in $sDirs){
@@ -545,97 +539,3 @@ function CreateAllDiffs{
 
 [bool]$pushToGithub = $true
 CreateAllDiffs
-
-<#
-try{
-    Push-Location
-    Set-Location ($config.TargetSourceRoot) -ErrorAction Stop
-
-    $statusResult = (git status -s)
-    if(-not [string]::IsNullOrWhiteSpace($statusResult)){
-        'It looks like there are pending changes in the directory [{0}]' -f $pwd | Write-Host -ForegroundColor Red
-        'Ensure git status -s returns empty before proceeding' | Write-Host -ForegroundColor Red
-        throw 'error'
-    }
-
-    Prepare-SourceDirectory -rootPath ($config.SourcePath)
-
-    # switch to the correct branch
-    git checkout ($config.Basebranch) | Write-Output
-    # clean the folder
-    git reset --hard
-    git clean -f
-    
-    ## NoAuth branch setup
-    # delete the noauth local branch and re-create
-    git branch -D mvcnoauth
-    git checkout -b mvcnoauth
-    # copy base NoAuth files
-    CopyFiles -sourcePath "$($config.SamplesPath)\MvcNoAuth" -destPath ($config.TargetSamplesPath)
-    git add . --all
-    git commit -m 'noauth initial'
-    
-    [string]$noauthcommitid = (git log -1 --format="%H")
-    
-    if([string]::IsNullOrWhiteSpace($noauthcommitid)){ 
-        throw ('Unable to determine value for noauthcommitid') 
-    }
-    
-    if($pushToGithub){
-        git push origin --delete mvcnoauth
-        git push -u origin mvcnoauth
-    }
-        
-    # noauth-indauth
-    git checkout mvcnoauth
-    git branch -D mvcnoauth-indauth
-    git checkout -b mvcnoauth-indauth
-    CopyFiles -sourcePath "$($config.SamplesPath)\MvcIndAuth" -destPath ($config.TargetSamplesPath)
-    git add . --all
-    git commit -m 'indauth'
-    
-    if($pushToGithub){
-        git push origin --delete mvcnoauth-indauth
-        git push -u origin mvcnoauth-indauth
-    }
-    # noauth-winauth
-    git checkout mvcnoauth
-    git branch -D mvcnoauth-winauth
-    git checkout -b mvcnoauth-winauth
-
-    CopyFiles -sourcePath "$($config.SamplesPath)\MvcWinAuth" -destPath ($config.TargetSamplesPath)
-    git add . --all
-    git commit -m 'winauth'
-
-    if($pushToGithub){
-        git push origin --delete mvcnoauth-winauth
-        git push -u origin mvcnoauth-winauth
-    }
-}
-finally{
-    Pop-Location
-}
-#>
-
-#### mvcnoauth branch
-# switch to master branch
-# checkout initial commit
-# create base commit of no auth
-# delete files in target dir
-# copy files from ind auth on top
-# create a new commit
-#
-# go back to no auth commit
-# delete files in target dir
-# copy files from win auth on top of no auth
-# 1.1 no auth
-# 1.2 ind auth
-# 2.1 no auth
-# 2.2 ind auth
-# 3.1 no auth
-# 3.2 win auth
-
-#EnsureFileReplacerInstlled
-#Normalize-Guids -rootPath "$pwd\samples"
-#Normalize-DevServerPort -rootPath "$pwd\samples"
-#Remove-UniqueText -rootPath "$pwd\samples"
