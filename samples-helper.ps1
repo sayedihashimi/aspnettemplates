@@ -407,6 +407,11 @@ function CreateAllDiffs{
     process{
         try{
             Push-Location
+
+            Set-Location "$allFilesRoot" -ErrorAction Stop
+            # clean up any changes in allfiles folder
+            git reset --hard 2>&1
+            git clean -f 2>&1
             Set-Location "$allFilesRoot\samples" -ErrorAction Stop
 
             # switch to master branch and clean up the directory before starting
