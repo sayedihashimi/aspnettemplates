@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>VS_MasterDetail_iPhone</string>
+	<string>MyApp</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.companyname.VS_MasterDetail_iPhone</string>
+	<string>com.companyname.MyApp</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>

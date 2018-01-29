@@ -6,7 +6,7 @@
 //
 using Foundation;
 
-namespace VS_MasterDetail_iPhone
+namespace MyApp
 {
 	[Register ("MasterViewController")]
 	partial class MasterViewController

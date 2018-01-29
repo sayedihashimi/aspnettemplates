@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("VS-MasterDetail-iPhone")]
+[assembly: AssemblyTitle("MyApp")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("VS-MasterDetail-iPhone")]
+[assembly: AssemblyProduct("MyApp")]
 [assembly: AssemblyCopyright("Copyright ©  2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("6fe5a583-d192-432e-93f9-f6a1e707317f")]
+[assembly: Guid("5345ca10-c395-4d1e-a9be-60fe43cfb668")]
 
 // Version information for an assembly consists of the following four values:
 //

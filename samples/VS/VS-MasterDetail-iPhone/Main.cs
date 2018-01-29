@@ -1,6 +1,6 @@
 ﻿using UIKit;
 
-namespace VS_MasterDetail_iPhone
+namespace MyApp
 {
 	public class Application
 	{

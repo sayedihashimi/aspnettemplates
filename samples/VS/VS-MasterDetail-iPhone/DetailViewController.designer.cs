@@ -6,7 +6,7 @@
 using Foundation;
 using System.CodeDom.Compiler;
 
-namespace VS_MasterDetail_iPhone
+namespace MyApp
 {
 	[Register ("DetailViewController")]
 	partial class DetailViewController

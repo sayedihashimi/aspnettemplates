@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UIKit;
 using Foundation;
 
-namespace VS_MasterDetail_iPhone
+namespace MyApp
 {
 	public partial class MasterViewController : UITableViewController
 	{

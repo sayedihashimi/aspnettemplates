@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>VS_BlankApp</string>
+	<string>MyApp</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.companyname.VS_BlankApp</string>
+	<string>com.companyname.MyApp</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>

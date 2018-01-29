@@ -1,6 +1,6 @@
 ﻿using UIKit;
 
-namespace VS_BlankApp
+namespace MyApp
 {
     public class Application
     {
