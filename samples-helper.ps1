@@ -346,7 +346,7 @@ function GetMarkdownReport{
     [cmdletbinding()]
     param()
     process{
-        [System.IO.DirectoryInfo[]]$dirs = (Get-ChildItem -Path $allFilesRoot -Directory)
+        [System.IO.DirectoryInfo[]]$dirs = (Get-ChildItem -Path "$allFilesRoot\samples" -Directory)
         $baseUrl = $config.BaseCompareUrl
         for($i = 0;$i -lt ($dirs.Length);$i++){
             $dir1 = $dirs[$i]
@@ -548,3 +548,6 @@ GetMarkdownReport
 
 # to delete all remote branchess
 # git branch -a|%{ if(!($_.contains('master')) -and !($_.contains('allfiles'))  ){     'git push origin --delete '+ $_}}|%{$_.replace('  remotes/origin/','')}|clip
+
+
+
