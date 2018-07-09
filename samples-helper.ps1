@@ -545,6 +545,6 @@ function CreateAllDiffs{
 
 [bool]$pushToGithub = $true
 CreateAllDiffs
-
+GetMarkdownReport
 # to delete all remote branchess
 # git branch -a|%{ if(!($_.contains('master')) -and !($_.contains('allfiles'))  ){     'git push origin --delete '+ $_}}|%{$_.replace('  remotes/origin/','')}|clip
