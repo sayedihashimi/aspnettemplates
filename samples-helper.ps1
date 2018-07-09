@@ -1,4 +1,7 @@
-﻿$env:IsDeveloperMachine=$true
+﻿[cmdletbinding()]
+param()
+
+$env:IsDeveloperMachine=$true
 function Get-ScriptDirectory
 {
     $Invocation = (Get-Variable MyInvocation -Scope 1).Value
@@ -279,12 +282,14 @@ function Prepare-SourceDirectory{
         [string]$rootPath = (join-path $pwd 'samples')
     )
     process{
+        'Preparing source directory, this may take some time if you added new sample files...' | Write-Output
         EnsureFileReplacerInstlled
         Normalize-Guids -rootPath $rootPath
         Normalize-DevServerPort -rootPath $rootPath
         Remove-UniqueText -rootPath $rootPath
         Normalize-UserSecrets -rootPath $rootPath
         Normalize-ConString -rootPath $rootPath
+        'Completed source file cleanup' | Write-Output
     }
 }
 
@@ -295,7 +300,7 @@ function CopyFiles{
         [string]$destPath
     )
     process{
-        Copy-ItemRobocopy -sourcePath $sourcePath -destPath $destPath
+        Copy-ItemRobocopy -sourcePath $sourcePath -destPath $destPath -recurse
     }
 }
 
@@ -316,12 +321,12 @@ function Get-Fullpath{
     process{
         $fullPath = $path
         $oldPwd = $pwd
-
-        Push-Location | out-null
-        Set-Location $workingDir | Out-Null
-        [Environment]::CurrentDirectory = $pwd
         
         try{
+            Push-Location | out-null
+            Set-Location $workingDir | Out-Null
+            [Environment]::CurrentDirectory = $pwd
+
             foreach($p in $path){
                 $r = [System.IO.Path]::GetFullPath($path)
                 if(-not ([string]::IsNullOrWhiteSpace($r))) {
@@ -341,7 +346,7 @@ function GetMarkdownReport{
     [cmdletbinding()]
     param()
     process{
-        [System.IO.DirectoryInfo[]]$dirs = (Get-ChildItem -Path ($config.SamplesPath) -Directory)
+        [System.IO.DirectoryInfo[]]$dirs = (Get-ChildItem -Path $allFilesRoot -Directory)
         $baseUrl = $config.BaseCompareUrl
         for($i = 0;$i -lt ($dirs.Length);$i++){
             $dir1 = $dirs[$i]
@@ -365,21 +370,24 @@ function GetMarkdownReport{
     }
 }
 
+$allFilesRoot = (join-path $scriptdir '..\aspnettemplates-allfiles' | Get-Fullpath)
+$masterRoot = (join-path $scriptdir '..\aspnettemplates-master' | Get-Fullpath)
+$destRoot = (join-path $scriptdir '..\aspnettemplates-dest' | Get-Fullpath)
+#$sourcePathOnAllFiles = (join-path $scriptdir '..\aspnettemplates-allfiles' | Get-Fullpath)
+#$sourPathonMaster = (join-path $scriptdir '..\aspnettemplates-master' | Get-Fullpath)
 
-$sourcePathOnAllFiles = ($scriptdir | Get-Fullpath)
-$sourPathonMaster = (join-path $scriptdir '..\aspnettemplates' | Get-Fullpath)
+if(-not (Test-Path $allFilesRoot)){
+    throw ('Samples path not found at [{0}]' -f $allFilesRoot)
+}
+if(-not (Test-Path $masterRoot)){
+    throw ('Samples path not found at [{0}]' -f $masterRoot)
+}
 
-if($sourcePathOnAllFiles -eq $sourPathonMaster){
-    throw ('both source path cannot be the same [{0}] [{1}]' -f $sourcePathOnAllFiles,$sourPathonMaster)
+if($allFilesRoot -eq $masterRoot){
+    throw ('both source path cannot be the same [{0}] [{1}]' -f $allFilesRoot,$masterRoot)
 }
 
 $config = New-Object -TypeName psobject -Property @{
-    SourcePath = $sourcePathOnAllFiles
-    SamplesPath = (Join-Path $sourcePathOnAllFiles 'samples' | Get-Fullpath)
-    TargetSourceRoot = $sourPathonMaster
-    # TargetSourceRoot = ('C:\temp\templates-temp')
-    TargetSamplesPath = (Join-Path $sourPathonMaster 'samples' | Get-Fullpath)
-    #TargetSamplesPath = ('C:\temp\templates-temp\samples')
     Basebranch = 'master'
     BaseCompareUrl = 'https://github.com/sayedihashimi/aspnettemplates/compare/'
 }
@@ -399,7 +407,12 @@ function CreateAllDiffs{
     process{
         try{
             Push-Location
-            Set-Location ($config.TargetSourceRoot) -ErrorAction Stop
+
+            Set-Location "$allFilesRoot" -ErrorAction Stop
+            # clean up any changes in allfiles folder
+            git reset --hard 2>&1
+            git clean -f 2>&1
+            Set-Location "$allFilesRoot\samples" -ErrorAction Stop
 
             # switch to master branch and clean up the directory before starting
             $statusResult = (git status -s)
@@ -409,45 +422,107 @@ function CreateAllDiffs{
                 throw 'error'
             }
 
-            Prepare-SourceDirectory -rootPath ($config.SourcePath)
+            # git checkout allfiles 2>&1
+            Prepare-SourceDirectory -rootPath ("$allFilesRoot\samples")
         
+            git checkout allfiles-xam 2>&1
+
+            [string[]]$sDirs = ((Get-ChildItem ("$allFilesRoot\samples") -Directory).FullName)
+            foreach($d in $sDirs){
+                $dInfo = (Get-Item $d)
+                $currentName = $dInfo.Name
+
+                # get all directories and process each
+                [string[]]$dirs = ((Get-ChildItem ($dInfo.FullName) -Directory).FullName)
+                for($i = 0; $i -lt $dirs.Length;$i++){
+                    #Set-Location ("$allFilesRoot\samples") -ErrorAction Stop
+                    Set-Location ("$destRoot\samples") -ErrorAction Stop
+                    #git checkout allfiles 2>&1
+                    # prepare the base branch
+                    [System.IO.DirectoryInfo]$dir = (Get-Item ($dirs[$i]))
+
+                    git checkout ($config.Basebranch) 2>&1
+                    git reset --hard 2>&1
+                    git clean -f 2>&1
+                    git branch -D ($dir.Name) 2>&1
+                    git checkout -b ($dir.Name) 2>&1
+
+                    CopyFiles -sourcePath ($dir.FullName) -destPath ("$destRoot\samples")
+                    git add . --all 2>&1
+                    git commit -m ("commit [{0}]:[{1}]" -f $dir.Name, $i) 2>&1
+                    if($pushToGithub){
+                        git push origin --delete ($dir.Name) 2>&1
+                        git push -u origin ($dir.Name) 2>&1
+                    }
+
+                    for($j = 0; $j -lt $dirs.Length;$j++){
+                        if( $i -ne $j){
+                            [System.IO.DirectoryInfo]$dir2 = (Get-Item $dirs[$j])
+                            # $branchName = "$($currentName)-$($dir.Name)-$($dir2.Name)"
+                            $branchName = "$($dir.Name)-$($dir2.Name)"
+                            git reset --hard 2>&1
+                            git clean -f 2>&1
+                            git checkout ($dir.Name) 2>&1
+                            git branch -D $branchName 2>&1
+                            git checkout -b $branchName 2>&1
+                            CopyFiles -sourcePath ($dir2.FullName) -destPath ("$destRoot\samples")
+                            git add . --all 2>&1
+                            git commit -m ("commit [{0}]:[{1}]:[{2}]" -f $branchName, $i, $j) 2>&1
+
+                            if($pushToGithub){
+                                git push origin --delete $branchName 2>&1
+                                git push -u origin $branchName 2>&1
+                                $compareUrl = '{0}{1}...{2}' -f ($config.BaseCompareUrl),($dir.Name),$branchName
+                                $global:compareUrls += $compareUrl
+                            
+                                $compareUrl | Write-Host -ForegroundColor Cyan
+                            }
+                        }
+                    }
+                }
+            }
+
+            <#
             # get all directories and process each
-            [string[]]$dirs = ((Get-ChildItem ($config.SamplesPath) -Directory).FullName)
+            [string[]]$dirs = ((Get-ChildItem ("$allFilesRoot\samples") -Directory).FullName)
             for($i = 0; $i -lt $dirs.Length;$i++){
+                #Set-Location ("$allFilesRoot\samples") -ErrorAction Stop
+                Set-Location ("$destRoot\samples") -ErrorAction Stop
+                #git checkout allfiles 2>&1
                 # prepare the base branch
                 [System.IO.DirectoryInfo]$dir = (Get-Item ($dirs[$i]))
                 $dirName = $dir.Name
 
-                git checkout ($config.Basebranch)
-                git reset --hard
-                git clean -f
-                git branch -D ($dir.Name)
-                git checkout -b ($dir.Name)
+                git checkout ($config.Basebranch) 2>&1
+                git reset --hard 2>&1
+                git clean -f 2>&1
+                git branch -D ($dir.Name) 2>&1
+                git checkout -b ($dir.Name) 2>&1
 
-                CopyFiles -sourcePath ($dir.FullName) -destPath ($config.TargetSamplesPath)
-                git add . --all
-                git commit -m ("commit [{0}]:[{1}]" -f $dir.Name, $i)
+                CopyFiles -sourcePath ($dir.FullName) -destPath ("$destRoot\samples")
+                git add . --all 2>&1
+                git commit -m ("commit [{0}]:[{1}]" -f $dir.Name, $i) 2>&1
                 if($pushToGithub){
-                    git push origin --delete ($dir.Name)
-                    git push -u origin ($dir.Name)
+                    git push origin --delete ($dir.Name) 2>&1
+                    git push -u origin ($dir.Name) 2>&1
                 }
 
                 for($j = 0; $j -lt $dirs.Length;$j++){
                     if( $i -ne $j){
                         [System.IO.DirectoryInfo]$dir2 = (Get-Item $dirs[$j])
                         $branchName = "$($dir.Name)-$($dir2.Name)"
-                        git reset --hard
-                        git clean -f
-                        git checkout ($dir.Name)
-                        git branch -D $branchName
-                        git checkout -b $branchName
-                        CopyFiles -sourcePath ($dir2.FullName) -destPath ($config.TargetSamplesPath)
-                        git add . --all
-                        git commit -m ("commit [{0}]:[{1}]:[{2}]" -f $branchName, $i, $j)
+                        git reset --hard 2>&1
+                        git clean -f 2>&1
+                        git checkout ($dir.Name) 2>&1
+                        git branch -D $branchName 2>&1
+                        git checkout -b $branchName 2>&1
+                        CopyFiles -sourcePath ($dir2.FullName) -destPath ("$destRoot\samples")
+                        git add . --all 2>&1
+                        git commit -m ("commit [{0}]:[{1}]:[{2}]" -f $branchName, $i, $j) 2>&1
 
                         if($pushToGithub){
-                            git push origin --delete $branchName
-                            git push -u origin $branchName
+                            git push origin --delete $branchName 2>&1
+                            git push -u origin $branchName 2>&1
                             $compareUrl = '{0}{1}...{2}' -f ($config.BaseCompareUrl),($dir.Name),$branchName
                             $global:compareUrls += $compareUrl
                             
@@ -456,6 +531,7 @@ function CreateAllDiffs{
                     }
                 }
             }
+            #>
         }
         finally{
             Pop-Location
@@ -465,100 +541,10 @@ function CreateAllDiffs{
         }
     }
 }
+#>
 
 [bool]$pushToGithub = $true
 CreateAllDiffs
 
-<#
-try{
-    Push-Location
-    Set-Location ($config.TargetSourceRoot) -ErrorAction Stop
-
-    $statusResult = (git status -s)
-    if(-not [string]::IsNullOrWhiteSpace($statusResult)){
-        'It looks like there are pending changes in the directory [{0}]' -f $pwd | Write-Host -ForegroundColor Red
-        'Ensure git status -s returns empty before proceeding' | Write-Host -ForegroundColor Red
-        throw 'error'
-    }
-
-    Prepare-SourceDirectory -rootPath ($config.SourcePath)
-
-    # switch to the correct branch
-    git checkout ($config.Basebranch) | Write-Output
-    # clean the folder
-    git reset --hard
-    git clean -f
-    
-    ## NoAuth branch setup
-    # delete the noauth local branch and re-create
-    git branch -D mvcnoauth
-    git checkout -b mvcnoauth
-    # copy base NoAuth files
-    CopyFiles -sourcePath "$($config.SamplesPath)\MvcNoAuth" -destPath ($config.TargetSamplesPath)
-    git add . --all
-    git commit -m 'noauth initial'
-    
-    [string]$noauthcommitid = (git log -1 --format="%H")
-    
-    if([string]::IsNullOrWhiteSpace($noauthcommitid)){ 
-        throw ('Unable to determine value for noauthcommitid') 
-    }
-    
-    if($pushToGithub){
-        git push origin --delete mvcnoauth
-        git push -u origin mvcnoauth
-    }
-        
-    # noauth-indauth
-    git checkout mvcnoauth
-    git branch -D mvcnoauth-indauth
-    git checkout -b mvcnoauth-indauth
-    CopyFiles -sourcePath "$($config.SamplesPath)\MvcIndAuth" -destPath ($config.TargetSamplesPath)
-    git add . --all
-    git commit -m 'indauth'
-    
-    if($pushToGithub){
-        git push origin --delete mvcnoauth-indauth
-        git push -u origin mvcnoauth-indauth
-    }
-    # noauth-winauth
-    git checkout mvcnoauth
-    git branch -D mvcnoauth-winauth
-    git checkout -b mvcnoauth-winauth
-
-    CopyFiles -sourcePath "$($config.SamplesPath)\MvcWinAuth" -destPath ($config.TargetSamplesPath)
-    git add . --all
-    git commit -m 'winauth'
-
-    if($pushToGithub){
-        git push origin --delete mvcnoauth-winauth
-        git push -u origin mvcnoauth-winauth
-    }
-}
-finally{
-    Pop-Location
-}
-#>
-
-#### mvcnoauth branch
-# switch to master branch
-# checkout initial commit
-# create base commit of no auth
-# delete files in target dir
-# copy files from ind auth on top
-# create a new commit
-#
-# go back to no auth commit
-# delete files in target dir
-# copy files from win auth on top of no auth
-# 1.1 no auth
-# 1.2 ind auth
-# 2.1 no auth
-# 2.2 ind auth
-# 3.1 no auth
-# 3.2 win auth
-
-#EnsureFileReplacerInstlled
-#Normalize-Guids -rootPath "$pwd\samples"
-#Normalize-DevServerPort -rootPath "$pwd\samples"
-#Remove-UniqueText -rootPath "$pwd\samples"
+# to delete all remote branchess
+# git branch -a|%{ if(!($_.contains('master')) -and !($_.contains('allfiles'))  ){     'git push origin --delete '+ $_}}|%{$_.replace('  remotes/origin/','')}|clip
