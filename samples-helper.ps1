@@ -425,7 +425,7 @@ function CreateAllDiffs{
             # git checkout allfiles 2>&1
             Prepare-SourceDirectory -rootPath ("$allFilesRoot\samples")
         
-            git checkout allfiles-xam 2>&1
+            git checkout allfiles 2>&1
 
             [string[]]$sDirs = ((Get-ChildItem ("$allFilesRoot\samples") -Directory).FullName)
             foreach($d in $sDirs){
